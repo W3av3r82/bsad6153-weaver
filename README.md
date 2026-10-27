@@ -1,7 +1,7 @@
 # BSAD 6153 Project: &lt;your project name&gt;
 
-**Student:** &lt;your name&gt;
-**My decision:** &lt;the decision you make regularly that this project improves&gt;
+**Student:** Joshua Weaver
+**My decision:** Each week, which terrain features on Kansas land I can hunt should I prioritize for whitetail scouting, using OpenTopography elevation data?
 **Website:** &lt;your domain, from Week 4&gt;
 
 This repository is one complete AI system, built over eight weeks: a real API, synced on a schedule into a
