@@ -1,8 +1,12 @@
 # BSAD 6153 Project: &lt;your project name&gt;
 
 **Student:** Joshua Weaver
-**My decision:** Each week, which terrain features on Kansas land I can hunt should I prioritize for whitetail scouting, using OpenTopography elevation data?
+**My decision:** Which day and hunting location in Kansas should I prioritize for whitetail scouting based on wind, temperature, precipitation, lunar cycle, sunrise/sunset, and moonrise/moonset?
 **Website:** &lt;your domain, from Week 4&gt;
+
+**Data source:** Visual Crossing Timeline Weather API.
+
+**Initial verification:** Successfully retrieved one daily forecast for Marquette, Kansas. Database design and scheduled syncing are not implemented yet.
 
 This repository is one complete AI system, built over eight weeks: a real API, synced on a schedule into a
 PostgreSQL database, shown on a public website, with a chatbot and an agent that answer and act from your
