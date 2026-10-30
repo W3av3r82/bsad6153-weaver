@@ -1,0 +1,462 @@
+{
+  "queryCost": 24,
+  "latitude": 38.5529,
+  "longitude": -97.8339,
+  "resolvedAddress": "Marquette, KS, United States",
+  "address": "Marquette,KS,US",
+  "timezone": "America/Chicago",
+  "tzoffset": -5.0,
+  "days": [
+    {
+      "datetime": "2026-10-01",
+      "datetimeEpoch": 1790830800,
+      "tempmax": 73.9,
+      "tempmin": 59.2,
+      "temp": 68.1,
+      "precip": 1.685,
+      "precipprob": 100.0,
+      "windspeed": 21.6,
+      "winddir": 37.6,
+      "sunrise": "07:27:18",
+      "sunset": "19:14:05",
+      "moonphase": 0.68,
+      "moonriseEpoch": 1790911482,
+      "moonsetEpoch": 1790878693,
+      "stations": [
+        "QNRK1",
+        "KSLN",
+        "KEWK",
+        "KHUT"
+      ],
+      "source": "obs",
+      "hours": [
+        {
+          "datetime": "00:00:00",
+          "datetimeEpoch": 1790830800,
+          "temp": 73.6,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 12.0,
+          "winddir": 169.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "01:00:00",
+          "datetimeEpoch": 1790834400,
+          "temp": 73.8,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 12.4,
+          "winddir": 168.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "02:00:00",
+          "datetimeEpoch": 1790838000,
+          "temp": 73.9,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 12.3,
+          "winddir": 180.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "03:00:00",
+          "datetimeEpoch": 1790841600,
+          "temp": 73.8,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 9.6,
+          "winddir": 171.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "04:00:00",
+          "datetimeEpoch": 1790845200,
+          "temp": 72.5,
+          "precip": 0.003,
+          "precipprob": 0.0,
+          "windspeed": 6.5,
+          "winddir": 161.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "05:00:00",
+          "datetimeEpoch": 1790848800,
+          "temp": 72.8,
+          "precip": 0.001,
+          "precipprob": 0.0,
+          "windspeed": 3.4,
+          "winddir": 49.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "06:00:00",
+          "datetimeEpoch": 1790852400,
+          "temp": 71.8,
+          "precip": 0.001,
+          "precipprob": 0.0,
+          "windspeed": 6.0,
+          "winddir": 48.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "07:00:00",
+          "datetimeEpoch": 1790856000,
+          "temp": 71.0,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 8.0,
+          "winddir": 11.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "08:00:00",
+          "datetimeEpoch": 1790859600,
+          "temp": 69.2,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 7.4,
+          "winddir": 20.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "09:00:00",
+          "datetimeEpoch": 1790863200,
+          "temp": 68.2,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 8.9,
+          "winddir": 43.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "10:00:00",
+          "datetimeEpoch": 1790866800,
+          "temp": 69.0,
+          "precip": 0.221,
+          "precipprob": 100.0,
+          "windspeed": 7.5,
+          "winddir": 49.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "11:00:00",
+          "datetimeEpoch": 1790870400,
+          "temp": 69.5,
+          "precip": 0.0,
+          "precipprob": 0.0,
+          "windspeed": 6.7,
+          "winddir": 13.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "12:00:00",
+          "datetimeEpoch": 1790874000,
+          "temp": 68.9,
+          "precip": 0.305,
+          "precipprob": 100.0,
+          "windspeed": 10.3,
+          "winddir": 64.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "13:00:00",
+          "datetimeEpoch": 1790877600,
+          "temp": 68.2,
+          "precip": 0.127,
+          "precipprob": 100.0,
+          "windspeed": 10.1,
+          "winddir": 47.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "14:00:00",
+          "datetimeEpoch": 1790881200,
+          "temp": 67.9,
+          "precip": 0.1,
+          "precipprob": 100.0,
+          "windspeed": 15.8,
+          "winddir": 43.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "15:00:00",
+          "datetimeEpoch": 1790884800,
+          "temp": 67.9,
+          "precip": 0.156,
+          "precipprob": 100.0,
+          "windspeed": 17.8,
+          "winddir": 351.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "16:00:00",
+          "datetimeEpoch": 1790888400,
+          "temp": 66.3,
+          "precip": 0.122,
+          "precipprob": 100.0,
+          "windspeed": 17.7,
+          "winddir": 9.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "17:00:00",
+          "datetimeEpoch": 1790892000,
+          "temp": 64.7,
+          "precip": 0.251,
+          "precipprob": 100.0,
+          "windspeed": 21.1,
+          "winddir": 13.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "18:00:00",
+          "datetimeEpoch": 1790895600,
+          "temp": 64.0,
+          "precip": 0.267,
+          "precipprob": 100.0,
+          "windspeed": 21.6,
+          "winddir": 27.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "19:00:00",
+          "datetimeEpoch": 1790899200,
+          "temp": 63.9,
+          "precip": 0.076,
+          "precipprob": 100.0,
+          "windspeed": 16.3,
+          "winddir": 29.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "20:00:00",
+          "datetimeEpoch": 1790902800,
+          "temp": 62.4,
+          "precip": 0.024,
+          "precipprob": 100.0,
+          "windspeed": 20.5,
+          "winddir": 35.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "21:00:00",
+          "datetimeEpoch": 1790906400,
+          "temp": 62.1,
+          "precip": 0.01,
+          "precipprob": 100.0,
+          "windspeed": 15.2,
+          "winddir": 40.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "22:00:00",
+          "datetimeEpoch": 1790910000,
+          "temp": 60.5,
+          "precip": 0.018,
+          "precipprob": 100.0,
+          "windspeed": 15.0,
+          "winddir": 22.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        },
+        {
+          "datetime": "23:00:00",
+          "datetimeEpoch": 1790913600,
+          "temp": 59.2,
+          "precip": 0.003,
+          "precipprob": 0.0,
+          "windspeed": 14.4,
+          "winddir": 35.0,
+          "stations": [
+            "QNRK1",
+            "KSLN",
+            "KEWK",
+            "KHUT"
+          ],
+          "source": "obs"
+        }
+      ]
+    }
+  ],
+  "stations": {
+    "QNRK1": {
+      "distance": 72373.0,
+      "latitude": 38.144,
+      "longitude": -98.478,
+      "useCount": 0,
+      "id": "QNRK1",
+      "name": "STAFFORD KS US",
+      "quality": 0,
+      "contribution": 0.0
+    },
+    "KSLN": {
+      "distance": 31813.0,
+      "latitude": 38.8,
+      "longitude": -97.65,
+      "useCount": 0,
+      "id": "KSLN",
+      "name": "SALINA, KS",
+      "quality": 100,
+      "contribution": 0.0
+    },
+    "KEWK": {
+      "distance": 73996.0,
+      "latitude": 38.05,
+      "longitude": -97.28,
+      "useCount": 0,
+      "id": "KEWK",
+      "name": "NEWTON (AWOS), KS",
+      "quality": 97,
+      "contribution": 0.0
+    },
+    "KHUT": {
+      "distance": 53849.0,
+      "latitude": 38.07,
+      "longitude": -97.87,
+      "useCount": 0,
+      "id": "KHUT",
+      "name": "KHUT",
+      "quality": 100,
+      "contribution": 0.0
+    }
+  }
+}
