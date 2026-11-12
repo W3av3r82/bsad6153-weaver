@@ -1,13 +1,14 @@
 # Baseline Log (Week 1)
 
-**My decision:** <!-- Best hunting conditions investigations! --> 
-**How often I make it:** <!-- twice a week -->
+**My decision:** Best hunting conditions investigations!
+**How often I make it:** twice a week
 
 Log each decision **while it happens**. Time yourself with a timer; don't estimate afterward.
 Mark any entry you had to reconstruct from memory as *(reconstructed)*.
 
 | Date | What I was deciding | What I looked at | Time (min) | What I wished I knew | Confidence (1&ndash;5) |
-|28 Oct|Which day to hunt this weekend|Several weather apps, lunar cycle website, sunrise sunset site|14 min, 7 seconds|quick snapshots of all criteria for multiple days/times|9/10|
+|---|---|---|---|---|---|
+|28 Oct|Which day to hunt this weekend|Several weather apps, lunar cycle website, sunrise sunset site|14 min, 7 seconds|quick snapshots of all criteria for multiple days/times|4/5|
 |  |  |  |  |  |  |
 
 ## Reflection

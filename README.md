@@ -1,7 +1,7 @@
 # BSAD 6153 Project: &lt;your project name&gt;
 
 **Student:** Joshua Weaver
-**My decision:** Which day and hunting location in Kansas should I prioritize for whitetail scouting based on wind, temperature, precipitation, lunar cycle, sunrise/sunset, and moonrise/moonset?
+**My decision:** Which day and hunting location in Kansas should I prioritize for whitetail hunting based on wind, temperature, precipitation, lunar cycle, sunrise/sunset, and moonrise/moonset?
 **Website:** &lt;your domain, from Week 4&gt;
 
 **Data source:** Visual Crossing Timeline Weather API.
@@ -98,15 +98,99 @@ every command before you approve it, and keep auto-approve off.
 
 ---
 
-## Project proposal (Week 1)
+## Project Proposal
 
-<!-- About 300 words: data source and backup API, your decision and workflow (from your baseline log),
-     your first agent idea, and risks. See the Week 1 page. -->
+My project will support a recurring decision: which day and Kansas location should I prioritize for whitetail hunting? I want to compare wind, temperature, precipitation, sunrise/sunset, and lunar information in one place. These conditions will inform my planning rather than serve as a guaranteed prediction of deer encounters.
+
+My primary source is the Visual Crossing Timeline Weather API. It provides historical and forecast weather, daily astronomy information, and related weather-station records. The initial collection contains 528 historical hourly records, 73 forecast hourly records, and four unique stations for Marquette, Kansas. Open-Meteo is my backup for weather information if Visual Crossing becomes unavailable. Switching would require adapting its fields and checking which astronomy features and station relationships are unavailable.
+
+Today, I consult several weather applications, a lunar-cycle website, and a sunrise/sunset website. My baseline log records one decision that took 14 minutes and 7 seconds. Switching websites and repeating location searches makes comparisons time-consuming. I want the system to provide a clear view of my preferred locations, dates, and conditions. I will compare later decision times with my baseline rather than assume the system saves time.
+
+By Week 6, my proposed agent would prepare and save a side-by-side scouting brief for locations and dates I explicitly select. It would combine relevant conditions, identify missing or stale information, and explain comparisons. I would make the final scouting choice; the agent would not assume my location or schedule.
+
+Risks include daily API limits, disabled or expired credentials, increasing data volume, changing forecasts, missing fields, and confusing historical observations with predictions. Daylight-saving changes also require careful timestamp handling. The current fetcher protects credentials, waits between requests, retries temporary failures, and reports results. Future syncing will need explicit freshness tracking. Storage, public display, attribution, and sample-sharing practices must follow applicable terms and instructor guidance.
 
 ## How to run this project
 
-<!-- Keep this current: how to run the sync, the website, and the evaluations. -->
+Run these commands from the repository folder after completing the Python 3.12,
+virtual environment, package installation, and `.env` setup above. Store your real
+weather key only in `.env` as `VISUAL_CROSSING_API_KEY`; `.env.example` contains
+only the blank variable name.
+
+### 1. Run the offline checks
+
+```bash
+.venv/bin/python -B ingest/test_fetch.py
+```
+
+These four tests simulate API responses and waits. They do not read the API key,
+contact Visual Crossing, or use API allowance. Successful output ends with `OK`.
+
+### 2. Preview the download plan
+
+```bash
+.venv/bin/python -B ingest/fetch.py \
+  --start 2026-10-01 \
+  --end 2026-10-22 \
+  --batch-days 1 \
+  --forecast-days 3 \
+  --minimum-records 500 \
+  --budget 600 \
+  --dry-run
+```
+
+This previews inclusive one-day historical batches for Marquette, Kansas, plus
+three upcoming complete forecast days. Forecast dates are calculated when the
+script runs, using `America/Chicago`. Dry-run mode reads no key, sends no API
+requests, and writes no files.
+
+### 3. Retrieve the data after checking your account allowance
+
+```bash
+.venv/bin/python -B ingest/fetch.py \
+  --start 2026-10-01 \
+  --end 2026-10-22 \
+  --batch-days 1 \
+  --forecast-days 3 \
+  --minimum-records 500 \
+  --budget 600
+```
+
+Unlike the preview, this command can use API allowance and writes responses to
+`data/raw/visual_crossing/`. The `--budget` is a conservative allowance cap for
+this run, including retries; it is not a dollar amount or an account-balance
+check. Other account activity is not included, so inspect your provider usage
+page before making live requests.
+
+The summary reports downloaded and reused files, failures, distinct hourly
+records, station records, missing core values, and reported `queryCost`.
+The verified October 29, 2026 collection contained 528 historical hours,
+73 forecast hours, and four unique stations. Future forecast counts and values
+can differ, including around daylight-saving changes. Resource counts and the
+provider's allowance accounting are different measurements.
+
+### Saved files and refresh behavior
+
+- `data/raw/` is ignored by Git. Full downloaded responses stay local.
+- Matching saved responses are reused by default. A repeated command may be a
+  cache-reuse run rather than a new API download; a saved forecast can be stale.
+- Adding `--refresh` requests matching batches again and overwrites their saved
+  files. It uses allowance and does not preserve the previous forecast version.
+  Do not add it without checking the account's remaining allowance.
+- Network timeouts, HTTP 429, and server errors have bounded retries. A persistent
+  error or insufficient budget stops the affected download and is reported;
+  already saved responses remain available.
+- Read `docs/data_dictionary.md` for field meanings, relationships, null values,
+  and the distinction between forecasts and historical observations.
+
+Database loading and scheduled syncing are not implemented yet. For a
+screencast, show whether each response was freshly downloaded or reused; do not
+present cached results as evidence of a new live request. Keep `.env` and your
+API key off-screen.
 
 ## Credits
 
-<!-- Your data API's required attribution, plus any open-source code or samples you used. -->
+[Weather Data Provided by Visual Crossing](https://www.visualcrossing.com/).
+Weather and astronomy data are retrieved through the
+[Visual Crossing Timeline Weather API](https://www.visualcrossing.com/resources/documentation/weather-api/timeline-weather-api/).
+See `docs/data_dictionary.md` for source details and data-use notes.
