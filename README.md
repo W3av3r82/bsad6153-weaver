@@ -6,7 +6,7 @@
 
 **Data source:** Visual Crossing Timeline Weather API.
 
-**Initial verification:** Successfully retrieved one daily forecast for Marquette, Kansas. Database design and scheduled syncing are not implemented yet.
+**Current status (Milestone 2):** Supabase database created and populated for Marquette and Elk City, Kansas. Five business queries were run and checked. Scheduled syncing is not implemented yet.
 
 This repository is one complete AI system, built over eight weeks: a real API, synced on a schedule into a
 PostgreSQL database, shown on a public website, with a chatbot and an agent that answer and act from your
@@ -183,10 +183,95 @@ provider's allowance accounting are different measurements.
 - Read `docs/data_dictionary.md` for field meanings, relationships, null values,
   and the distinction between forecasts and historical observations.
 
-Database loading and scheduled syncing are not implemented yet. For a
+Database loading is implemented below; scheduled syncing is not implemented yet. For a
 screencast, show whether each response was freshly downloaded or reused; do not
 present cached results as evidence of a new live request. Keep `.env` and your
 API key off-screen.
+
+## Milestone 2: database setup, loading, and queries
+
+Run Python commands from the repository folder using the existing Python 3.12
+virtual environment. Keep credentials in ignored `.env` only. Use Supabase's
+**Session pooler** URI as `DATABASE_URL`, with any password symbols percent-encoded.
+The Data API and automatically exposing new tables should remain disabled per
+the course instructions. Do not display the connection string in a recording.
+
+### Schema and connection
+
+Review `docs/schema.md` for the five-table diagram and design decisions.
+`db/schema.sql` creates locations, daily conditions, hourly weather, stations,
+and weather-station links. It is intended for a fresh database and deliberately
+fails if these tables already exist. Review it before applying it in Supabase's
+SQL Editor; **do not rerun table creation on the populated course database**.
+
+Check the connection from Terminal:
+
+```bash
+.venv/bin/python scripts/check_db.py
+```
+
+### Check and preview the loader without a database connection
+
+```bash
+.venv/bin/python -B ingest/test_load.py
+.venv/bin/python -B ingest/load.py
+```
+
+The four offline tests check repeated daylight-saving hours, null measurements,
+duplicate input, observation preference, invalid values, and unresolved station
+references. Preview reads saved JSON under `data/raw/visual_crossing/`; it does
+not read `.env`, contact an API, or connect to Supabase. Because raw data is not
+committed, a fresh clone needs locally retrieved files before preview or loading.
+Only use this project's fetcher's **US-unit** responses; the raw payload does
+not independently declare its units.
+
+### Apply the load after reviewing the preview
+
+```bash
+.venv/bin/python -B ingest/load.py --apply
+```
+
+`--apply` reads `DATABASE_URL` privately and writes to Supabase. The loader uses
+parameterized SQL, inserts parent records before children, and commits the load
+as one transaction. It uses `ON CONFLICT DO NOTHING`: existing records and their
+links are left unchanged. It does not refresh forecasts or implement updates.
+Invalid/conflicting input stops validation before connecting; database failures
+are reported without printing credential-bearing exception details.
+
+Run the same command a second time. With unchanged files and database contents,
+the final `COMMITTED` summary should show **zero inserted in all five tables**.
+This uses no weather API allowance. A reported failure is not proof of a commit;
+check database state before claiming success.
+
+### Observed course-run results
+
+The student confirmed these loads in Terminal and inspected the Supabase table:
+
+- Initial Marquette load: 1 location, 25 days, 601 hours, 4 stations, and 2,085 links.
+- Repeating that load: zero newly inserted rows in every table.
+- Added Elk City: 1 location, 22 days, 528 hours, 5 stations, and 2,635 links.
+- Combined-file preview: 45 files, 2 locations, 47 location-days, 1,129 hours,
+  9 stations, and 4,720 links. Of the hours, 1,056 are observations and 73 are
+  saved forecasts. These counts describe this snapshot, not future downloads.
+
+### Business queries and their limits
+
+Open `db/queries.sql` and run individual SELECT statements in **Supabase's SQL
+Editor**, not the Mac Terminal. These queries only read data. They compare
+October 1-22, 2026 observations at Marquette and Elk City and exclude the saved
+forecast snapshots. The five student-run result counts were 44, 96, 44, 44,
+and 88 rows. They include JOINs, GROUP BY aggregation, and time filters.
+
+`docs/questions.md` records the running question list, the student's surprising
+wind/rainfall timing finding, and unanswered questions. Sunrise/sunset queries
+select nearby hourly timestamps, not exact event-time measurements. Weather
+patterns alone do not establish a front's cause/direction or predict deer encounters.
+Coordinates and timezones remain stored for identity and time interpretation;
+the business reports display location names and local times.
+
+The Milestone 2 pull request still requires the student's own AI review log,
+review confirmations, and a 4-6 minute screencast link. Do not treat this README
+as a personal review log or proof that the pull request has been submitted.
 
 ## Credits
 
