@@ -119,3 +119,54 @@ The SQL wraps table creation in a transaction so an error does not leave a
 partially created design. It contains no DROP statements or passwords. Do not
 run it until reviewed. Applying it creates tables; it does not load weather,
 create access roles, or implement scheduled syncing.
+
+## Access roles
+
+### app_reader — verified November 16, 2026
+
+`db/roles.sql` creates a login without administrative powers and grants SELECT
+on the five data tables. The password was set separately in Supabase, not in
+this repository. Its Session pooler URI is stored privately as
+`APP_DATABASE_URL` in ignored `.env`; the administrative `DATABASE_URL` stays
+separate. Access to `sync_runs` must be granted when that table is created.
+
+Before running the test, the student predicted: “select should succeed,
+however delete and write should be denied!” The observed result matched.
+
+Commands run from the project folder:
+
+```bash
+.venv/bin/python scripts/check_db.py --app
+.venv/bin/python scripts/check_permissions.py
+```
+
+The connection check reported:
+
+```text
+[ok] Connected using APP_DATABASE_URL
+     Database user: app_reader
+```
+
+The student supplied the following permission-test output:
+
+```text
+[ok] Database user: app_reader
+SQL: SELECT count(*) FROM public.hourly_weather
+[ok] SELECT succeeded: 1129 hourly records
+SQL: DELETE FROM public.hourly_weather WHERE FALSE
+[ok] DELETE: permission denied (SQLSTATE 42501)
+SQL: INSERT INTO public.locations (name, latitude, longitude, timezone) SELECT 'permission_test', 0, 0, 'UTC' WHERE FALSE
+[ok] INSERT: permission denied (SQLSTATE 42501)
+PASS: read allowed; INSERT and DELETE denied.
+No test changes committed. This checks the named tables/operations only.
+```
+
+`WHERE FALSE` targets zero rows even if permissions are unexpectedly broad;
+the checker additionally rolls back after each statement. These tests establish
+SELECT on hourly weather, DELETE denial on hourly weather, and INSERT denial
+on locations. They do not independently test every operation on every table.
+
+### Remaining Part A checks
+
+- Student confirmed Enable Data API is off on November 16, 2026.
+- After adding `sync_runs`, grant SELECT to `app_reader` and verify that access.

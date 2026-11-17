@@ -18,6 +18,10 @@ TABLES = ('locations', 'daily_conditions', 'hourly_weather', 'stations',
           'weather_station_links')
 
 
+class DataValidationError(ValueError):
+    """Safe diagnostic constructed from fixed labels, never raw field values."""
+
+
 def number(value, low=None, high=None):
     if value is None:
         return None
@@ -62,14 +66,19 @@ def prepare(directory):
     if not files:
         raise ValueError('No saved JSON files found')
     for path in files:
+        check = 'JSON structure'
         try:
             payload = json.loads(path.read_text())
+            check = 'location latitude'
             latitude = number(payload['latitude'], -90, 90)
+            check = 'location longitude'
             longitude = number(payload['longitude'], -180, 180)
             if latitude is None or longitude is None:
                 raise ValueError('Location coordinates are required')
             loc = (latitude, longitude)
+            check = 'location timezone'
             tz = ZoneInfo(payload['timezone'])
+            check = 'location name and metadata'
             name = payload['resolvedAddress']
             if not isinstance(name, str) or not name.strip():
                 raise ValueError('Location name is required')
@@ -77,6 +86,7 @@ def prepare(directory):
             if loc in data['locations'] and data['locations'][loc] != location:
                 raise ValueError('Conflicting location metadata')
             data['locations'][loc] = location
+            check = 'station metadata'
             for sid, station in (payload.get('stations') or {}).items():
                 if not isinstance(sid, str) or not sid.strip() or station.get('id') != sid:
                     raise ValueError('Invalid or inconsistent station ID')
@@ -84,8 +94,10 @@ def prepare(directory):
                     number(station.get('latitude'), -90, 90),
                     number(station.get('longitude'), -180, 180)))
             for day in payload['days']:
+                check = 'daily date'
                 local_date = date.fromisoformat(day['datetime'])
                 day_key = (loc, local_date)
+                check = 'daily sunrise, sunset, moon events, or moon phase'
                 daily = tuple(astronomy(day, field, local_date, tz)
                     for field in ('sunrise', 'sunset', 'moonrise', 'moonset')) + (
                     number(day.get('moonphase'), 0, 1),)
@@ -94,22 +106,27 @@ def prepare(directory):
                     raise ValueError('Conflicting daily astronomy')
                 data['daily_conditions'][day_key] = daily
                 for hour in day['hours']:
+                    check = 'hourly timestamp and parent date'
                     when = instant(hour['datetimeEpoch'])
                     if when.astimezone(tz).date() != local_date:
                         raise ValueError('Hour does not belong to its stated local day')
+                    check = 'hourly observation/forecast source label'
                     source = hour.get('source')
                     if source not in ('obs', 'fcst'):
                         raise ValueError('Unrecognized weather source; review required')
+                    check = 'hourly temperature, wind, or precipitation values'
                     values = (local_date, when, source,
                         number(hour.get('temp')),
                         number(hour.get('winddir'), 0, 360),
                         number(hour.get('windspeed'), 0),
                         number(hour.get('precipprob'), 0, 100),
                         number(hour.get('precip'), 0))
+                    check = 'hourly station references'
                     ids = hour.get('stations') or []
                     if not isinstance(ids, list) or any(
                             not isinstance(s, str) or not s.strip() for s in ids):
                         raise ValueError('Invalid hourly station list')
+                    check = 'duplicate or conflicting hourly records'
                     candidate = (values, frozenset(ids))
                     key = (loc, when)
                     existing = data['hourly_weather'].get(key)
@@ -124,11 +141,22 @@ def prepare(directory):
                             continue  # Prefer observed weather over forecast in the input.
                     data['hourly_weather'][key] = candidate
         except (ValueError, KeyError, TypeError, AttributeError, OverflowError, OSError) as error:
-            raise ValueError(f'{path.name}: invalid or conflicting data ({type(error).__name__})') from None
+            trusted = {
+                'Boolean supplied for a numeric field', 'Invalid numeric field',
+                'Numeric field outside its valid range',
+                'Missing or invalid integer epoch timestamp',
+                'Location coordinates are required', 'Location name is required',
+                'Conflicting location metadata', 'Invalid or inconsistent station ID',
+                'Conflicting daily astronomy', 'Hour does not belong to its stated local day',
+                'Unrecognized weather source; review required', 'Invalid hourly station list',
+                'Conflicting same-source weather revisions',
+            }
+            reason = str(error) if type(error) is ValueError and str(error) in trusted else type(error).__name__
+            raise DataValidationError(f'Validation check: {check}; {reason}') from None
     for key, (values, ids) in data['hourly_weather'].items():
         for sid in ids:
             if sid not in data['stations']:
-                raise ValueError('Station reference has no metadata; load stopped')
+                raise DataValidationError('Validation check: station reference has no metadata; load stopped')
             data['weather_station_links'][(key, sid)] = None
         counts['missing_measurements'] += sum(v is None for v in values[3:])
         counts[values[2]] += 1
