@@ -273,6 +273,135 @@ The Milestone 2 pull request still requires the student's own AI review log,
 review confirmations, and a 4-6 minute screencast link. Do not treat this README
 as a personal review log or proof that the pull request has been submitted.
 
+## Milestone 3: forecast sync and automation
+
+This milestone prioritizes **upcoming forecasts** for Marquette and Elk City.
+Historical observations remain available for comparisons. The forecast endpoint
+has no documented changed-since cursor, so each run refreshes the available
+rolling forecast window rather than using a latest-hour timestamp to skip
+predictions that may have changed. No historical gap is downloaded.
+
+### Database additions and access
+
+`db/roles.sql` creates the reader account; it is a create-once script, not a
+password file. `db/sync_schema.sql` creates `sync_runs` and `sync_state`, and
+grants their SELECT access to `app_reader`. Apply this additive migration once
+after reviewing it. Never rerun the original weather table schema on the
+populated database. `docs/schema.md` records the initial permission tests.
+The student confirmed Data API is disabled. Keep it disabled.
+
+### Local forecast sync
+
+From the repository folder in Terminal:
+
+```bash
+.venv/bin/python -B ingest/sync.py
+```
+
+The default is a plan-only preview, without reading credentials or connecting.
+Before a live test, write a prediction for inserted/updated **hourly** records.
+Only after approving the API usage and database writes, run:
+
+```bash
+.venv/bin/python -B ingest/sync.py --apply
+```
+
+Settings come from environment variables first, then ignored `.env`:
+`DATABASE_URL` is the owner Session pooler connection and
+`VISUAL_CROSSING_API_KEY` is the weather key. Never display their values.
+Weather upserts use parameterized values, update `last_updated_at` only for
+changed entity values, and preserve observations against forecast overwrites.
+Supporting-entity counts are separate from the headline hourly counts.
+The data transaction includes entity changes, per-location refresh bookmarks,
+and the success log. A separately committed pending log starts with status
+`failed`, a null finish time, and an in-progress/interrupted explanation. A
+crashed run is therefore never treated as successful. Failure details are
+restricted to safe diagnostics; failed attempts exit nonzero.
+
+`sync_state` holds each location's latest successful **live** refresh and
+forecast coverage. Refresh timestamps record checks even when no weather
+values change. `db/sync_status.sql` answers when the last live refresh succeeded
+and lists changes in the last seven days. Manual replays are excluded from
+live-freshness calculations and do not advance refresh bookmarks.
+
+### Saved responses and offline checks
+
+Live responses stay in ignored `data/raw/sync_forecasts/run_<run_id>/` locally.
+They contain response JSON, not request parameters or API keys. GitHub-hosted
+runner copies are temporary and are not uploaded as artifacts. The validator
+excludes elapsed hours without source labels, reports their count, and does
+not invent observations or relabel those hours. Future unlabeled hours and
+unexpected source categories stop the run for review.
+
+```bash
+.venv/bin/python -B ingest/test_sync.py
+.venv/bin/python -B ingest/test_load.py
+.venv/bin/python -B ingest/test_fetch.py
+.venv/bin/python -B ingest/sync.py --validate-dir data/raw/sync_forecasts/run_3
+```
+
+The last command is an offline validation example using the student's saved
+Run 3 files, which are not in a fresh clone. To test an unchanged saved snapshot
+against the database (writes and a new manual log, but no weather API calls):
+
+```bash
+.venv/bin/python -B ingest/sync.py --apply --replay-dir data/raw/sync_forecasts/run_3
+```
+
+A replay must not be labeled a scheduled live refresh. Local replay tests
+confirmed 680 inserted / 0 updated, followed by 0 inserted / 0 updated. A later
+live run (Run 6) fetched 680 hours, inserted 0, updated 382, and reported
+`queryCost=2`; the student verified those counts in `sync_runs`. These are
+observed snapshot results, not predictions for future runs. Earlier failures
+revealed missing source labels; the validation was corrected rather than
+silently labeling unknown data.
+
+### GitHub Actions schedule and secrets
+
+`.github/workflows/sync.yml` supports a manual **Run workflow** button and a
+schedule at **11:17 and 23:17 UTC**. That is 5:17 a.m./p.m. Central Standard
+Time, or 6:17 a.m./p.m. Central Daylight Time. The twice-daily frequency balances
+fresh forecasts for hunting planning with low usage. Avoiding the top of the
+hour may reduce contention, but GitHub can still delay runs.
+
+Standard forecast requests normally cost one allowance unit per location:
+about two per refresh and four daily before retries, against the student's
+verified free-account allowance of 1,000 daily units. The code caps attempts at
+four per location/eight total and checks reported `queryCost`. This does not
+measure other account activity or guarantee that uncertain timeout attempts
+were uncharged. Inspect the provider account usage before extra live tests.
+
+In repository **Settings → Secrets and variables → Actions**, add:
+
+- `DATABASE_URL`: the owner **Session pooler** URI, not the app_reader URI.
+- `VISUAL_CROSSING_API_KEY`: the Visual Crossing key.
+
+The workflow refers only to those secret names and passes their values as
+process environment variables. It does not print them, create a committed
+`.env`, or upload raw responses. It installs only the three dependencies needed
+for sync. The Python exit status makes failed syncs appear as failed Actions
+jobs; configure your GitHub notification preferences to receive failures.
+Database connection failures cannot be logged in an unreachable database, so
+Actions logs and failure status remain necessary evidence.
+
+### Rollout and required schedule evidence
+
+Use PR 1, branch `milestone-3-sync`, for Parts A–D. A manual Actions run can be
+tested from that branch once the workflow is discoverable; scheduled execution
+requires the workflow on the default branch. Follow the course's rollout order:
+place the reviewed workflow on `main`, verify a manual run, and collect real
+scheduled successes. If a branch manual trigger is available before merge,
+use it to verify PR 1 first. Do not count any local or manual run toward the
+scheduled-run requirement.
+
+At least **three successful scheduled runs spanning 48 hours** are required.
+With a 12-hour schedule, adjacent three runs span only 24 hours: normally five
+scheduled successes are needed so the first and fifth span 48 hours. Verify
+actual timestamps rather than assuming the cron interval proves the span.
+Then create PR 2, branch `milestone-3`, for Parts E–H. Data-quality measurements,
+fairness check, golden questions, failure tests, and dated documentation remain
+to be completed; this README does not claim those deliverables are finished.
+
 ## Credits
 
 [Weather Data Provided by Visual Crossing](https://www.visualcrossing.com/).

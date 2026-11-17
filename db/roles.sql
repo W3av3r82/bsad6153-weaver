@@ -1,27 +1,39 @@
--- db/roles.sql: who may do what in your database (Week 2, extended in Week 6).
---
--- NEVER PUT A PASSWORD IN THIS FILE. It is committed to GitHub.
--- Create each role here without a password, then set the password separately
--- in the Supabase SQL editor (and nowhere in your repository):
---
---     alter role app_reader with password '...long random password...';
---
--- Then put the role's connection string in .env as APP_DATABASE_URL.
---
--- Week 2: a read-only role for the website, chatbot, and golden-question checker.
--- create role app_reader login;
--- grant usage on schema public to app_reader;
--- grant select on <your data tables> to app_reader;
---
--- Week 3: add sync_runs to the grant above when you create it.
---
--- Week 6: the agent's own role (see the Week 6 page for the exact grants).
--- create role agent_writer login;
--- grant usage on schema public to agent_writer;
--- grant select on <your data tables>, sync_runs, agent_runs, agent_proposals to agent_writer;
--- grant insert on agent_runs, agent_proposals to agent_writer;
--- grant update on agent_runs to agent_writer;
---
--- Week 6: the one write your website may do, which covers only the review columns.
--- grant select on agent_runs, agent_proposals to app_reader;
--- grant update (status, reviewed_at, reviewer_note) on agent_proposals to app_reader;
+-- Milestone 3: run as the database owner after reviewing this file.
+-- No passwords belong in this file or Git history.
+-- Set the app_reader password privately in Supabase, then store its Session
+-- pooler connection in .env as APP_DATABASE_URL.
+-- This script creates a NEW role; if it already exists, stop and inspect it.
+
+BEGIN;
+
+CREATE ROLE app_reader LOGIN
+    NOSUPERUSER NOCREATEDB NOCREATEROLE NOINHERIT NOREPLICATION NOBYPASSRLS;
+
+GRANT USAGE ON SCHEMA public TO app_reader;
+
+-- Explicitly grant only SELECT on the project's data tables.
+REVOKE ALL PRIVILEGES ON TABLE
+    public.locations,
+    public.daily_conditions,
+    public.hourly_weather,
+    public.stations,
+    public.weather_station_links
+FROM app_reader;
+
+GRANT SELECT ON TABLE
+    public.locations,
+    public.daily_conditions,
+    public.hourly_weather,
+    public.stations,
+    public.weather_station_links
+TO app_reader;
+
+-- No INSERT, UPDATE, DELETE, TRUNCATE, sequence, or table-creation grants.
+-- PostgreSQL PUBLIC grants apply to all roles, even with NOINHERIT.
+-- Verify effective permissions using the actual app_reader connection;
+-- do not assume these grants alone prove read-only access.
+-- Part C: db/sync_schema.sql grants SELECT on sync_runs and sync_state.
+-- After those tables exist, run the following separately (not this CREATE ROLE again):
+-- GRANT SELECT ON public.sync_runs, public.sync_state TO app_reader;
+
+COMMIT;
