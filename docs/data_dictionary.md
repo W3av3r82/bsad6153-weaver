@@ -95,20 +95,29 @@ Proposed database relationships, to be finalized with the database assignment:
 - Historical weather has a list of station IDs: many weather records can reference the same station, and one weather record can reference multiple stations. A linking table would preserve this many-to-many relationship.
 - Keep `source` and collection provenance. If forecast revisions are retained, an additional retrieval/run identifier is needed; location/time alone cannot distinguish multiple predictions for the same future hour.
 
-No primary keys, foreign keys, or linking tables have been created yet. These are design proposals, not implemented guarantees.
+Milestone 3 update: the database now implements these relationships in
+`db/schema.sql`, with sync tracking in `db/sync_schema.sql`. The preceding
+discussion records the original design reasoning; see `docs/schema.md` for
+the implemented tables. Forecast upserts replace modeled values for the same
+location/hour rather than retaining a complete revision history.
 
 ## 6. Update behavior and finding new data
 
 Forecast values can change before their target hour. New historical hours become available as time advances; older historical values may also be corrected. We have not verified a fixed refresh interval and do not promise one.
 
-Current fetch behavior:
+Milestone 1 historical fetch behavior (`ingest/fetch.py`):
 
 - Request inclusive date ranges in nonoverlapping batches; continue from the day after each batch's end. This is date batching, not page-number or cursor pagination.
 - Reuse an existing matching JSON file by default. A reused forecast can therefore be stale.
 - `--refresh` explicitly downloads matching batches again and overwrites their cached files; it uses allowance and does not preserve the previous forecast version.
 - The payload is saved as returned. The current fetcher does not persist an explicit retrieval timestamp or a sync cursor, so raw weather timestamps must not be presented as forecast issue times.
 
-Proposed later sync behavior: track the last successfully processed absolute timestamp, fetch new hours plus an overlap for corrections, and upsert on stable record identities. Refresh the upcoming forecast window separately. Record retrieval time and source; decide whether to keep revisions before claiming forecast-accuracy comparisons. This is not implemented in Milestone 1.
+Milestone 3 now uses `ingest/sync.py` to refresh both towns' available forecast
+window and upsert stable location/hour identities. It inserts new hours,
+updates changed modeled values, and leaves identical rows unchanged.
+`sync_state` records the last successful live refresh and forecast horizon;
+`sync_runs` records attempts and outcomes. A successful replay is not a new
+live refresh. These retrieval times are not the provider's forecast issue times.
 
 ## 7. Limits, waiting, and failure handling
 
@@ -143,4 +152,42 @@ Leaking the API key could permit unauthorized account use. Misreading forecast d
 
 ### Who should read or change the records?
 
-Proposed roles: the student and authorized ingestion process may update stored data; the public application should have read-only access to appropriate display/derived information, with no access to secrets or personal logs. Administrative changes should stay under the student's control. These permissions have not yet been implemented because there is no database.
+Implemented access: the student and authorized sync process use the database
+write connection. `app_reader` has SELECT access; the student verified that
+the tested INSERT and DELETE operations were denied. This is not a test of
+every possible operation. The Supabase Data API remains disabled. Future public
+application responses must exclude secrets and private hunting preferences.
+
+## 10. Milestone 3 lineage, freshness, and ownership
+
+Visual Crossing forecast responses flow through `ingest/sync.py` to saved raw
+JSON, validation/transformation, and transactional Supabase upserts. Daily
+astronomy joins hourly weather by location and local date. Historical station
+links retain their provider IDs; forecasts may legitimately have no links.
+The application/report path reads through `app_reader`. Raw sync files on a
+GitHub Actions runner are temporary and are not uploaded as durable artifacts;
+local ignored copies and evaluation snapshots are not a complete forecast
+revision archive.
+
+GitHub Actions schedules refreshes at **11:17 and 23:17 UTC**, about 12 hours
+apart. If every run starts promptly and succeeds, retrieval age normally grows
+to roughly 12 hours plus execution time. This is a target, not a guaranteed
+maximum: scheduling delays, API/database outages, or invalid credentials can
+leave data stale indefinitely. Show `last_successful_refresh_at` and its age,
+check coverage for the requested hunt window, and disclose stale or incomplete
+data before giving advice. A recent retrieval does not guarantee forecast
+accuracy or reveal the provider's issue time. Failed runs do not advance the
+successful-refresh marker; `last_updated_at` alone cannot establish freshness
+because unchanged values need no update.
+
+Joshua Weaver owns project maintenance, reviews failed runs, protects
+credentials, and approves schema or behavior changes. Visual Crossing supplies
+the predictions; Joshua remains responsible for the hunting decision. Changes
+belong in reviewed Git commits/pull requests, with dated test evidence.
+
+### Documentation change log
+
+- **November 21, 2026:** documented the implemented forecast sync, database
+  relationships and reader access, lineage, failure-dependent freshness limits,
+  and ownership. Added measured astronomy investigation in `docs/data_quality.md`;
+  no moon times were imputed or stored weather values edited for that check.
