@@ -1,0 +1,176 @@
+id,question,category,reference_sql,correct_behavior,source
+Q01,Which location would be better for a Sunday-morning hunt?,compare,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,
+ w.source,w.temperature_f,w.wind_speed_mph,w.wind_direction_deg,
+ w.precipitation_in,w.precipitation_probability_pct
+FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at AND w.source='fcst'
+ORDER BY h.name,w.valid_at","Confirm an explicit hunt date and time window; ask for unknown hunting method, equipment, goal and weather preferences. Reference SQL supplies morning forecast facts, not an objective best hunt. Explain preference fit and uncertainty; no assumed access, guaranteed encounter, or invented user limits. Fixed SQL morning window is sunrise to noon; adapt only to the user-confirmed window.",baseline
+Q02,Which location has significant precipitation expected during the hunt or shortly afterward?,compare,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,
+ w.precipitation_in,w.precipitation_probability_pct,w.temperature_f
+ FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at+interval '1 hour' AND w.source='fcst'
+ ORDER BY h.name,w.valid_at","Confirm the hunt window and post-hunt lookahead; clarify significant rain and tolerance rather than invent numerical thresholds. Pair probability, amount, timing and temperature; probability alone does not establish scattered showers. SQL example uses sunrise through one hour after noon.",baseline
+Q03,How much rainfall is expected in the 72 hours before my hunt starts?,aggregate,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) , expected AS (
+ SELECT h.*,g.hour FROM hunt h CROSS JOIN LATERAL generate_series(
+ h.sunrise_at-interval '72 hours',h.sunrise_at-interval '1 hour',interval '1 hour') g(hour)
+), aligned AS (
+ SELECT e.*,date_trunc('hour',e.hour) AS lookup_hour FROM expected e
+)
+ SELECT a.name,count(*) AS expected_hours,count(w.weather_id) AS available_hours,
+ count(*)-count(w.weather_id) AS missing_hours,
+ count(*) FILTER(WHERE w.source='obs') AS observed_hours,
+ count(*) FILTER(WHERE w.source='fcst') AS forecast_hours,
+ count(*) FILTER(WHERE w.weather_id IS NOT NULL AND w.precipitation_in IS NULL) AS missing_amounts,
+ sum(w.precipitation_in) FILTER(WHERE w.source='obs') AS observed_inches,
+ sum(w.precipitation_in) FILTER(WHERE w.source='fcst') AS predicted_inches
+ FROM aligned a LEFT JOIN public.hourly_weather w ON w.location_id=a.location_id
+ AND w.valid_at=a.lookup_hour GROUP BY a.name ORDER BY a.name","Confirm the exact start instant. Reference example uses sunrise and 72 hourly bins ending before it; hourly bins approximate event-relative boundaries. Separate observed and forecast totals, label old forecast snapshots for elapsed hours as unverified rather than observations, disclose missing hours/amounts, and never present partial sums as full-window totals. Do not substitute no rain for missing data.",baseline
+Q04,"What are the sunrise, sunset, moonrise, moonset and moon phase at each location on my hunting date?",lookup,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT name,hunt_date,sunrise_at AT TIME ZONE timezone AS sunrise_local,
+ sunset_at AT TIME ZONE timezone AS sunset_local,moonrise_at AT TIME ZONE timezone AS moonrise_local,
+ moonset_at AT TIME ZONE timezone AS moonset_local,moon_phase FROM hunt ORDER BY name","Use the explicit local date and timezone, disclose missing events, and present lunar data as information without claiming proven effects on deer activity.",baseline
+Q05,How do wind speed and direction compare between the two locations during my hunt?,compare,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,
+ w.source,w.temperature_f,w.wind_speed_mph,w.wind_direction_deg,
+ w.precipitation_in,w.precipitation_probability_pct
+FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at AND w.source='fcst'
+ORDER BY h.name,w.valid_at","Compare matching confirmed windows. Wind direction is where wind comes from; speed is mph. Disclose absent gusts, missing hours and site-specific terrain limits; do not invent shooting thresholds.",baseline
+Q06,"When was each location forecast refreshed, and is either stale?",lookup,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,s.last_successful_refresh_at,
+ extract(epoch FROM (%(as_of)s::timestamptz-s.last_successful_refresh_at))/3600 AS age_hours,
+ s.forecast_through,s.run_id FROM hunt h LEFT JOIN public.sync_state s USING(location_id)
+ ORDER BY h.name","Use live sync_state freshness, not replay completion or weather last_updated_at. Report measured age and missing state. A 12-hour schedule is a target, not a worst-case guarantee; disclose delays/failures and state any proposed stale threshold explicitly.",baseline
+Q07,"Which hunting hours have rain forecast, and what temperature accompanies it?",lookup,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,
+ w.temperature_f,w.precipitation_in,w.precipitation_probability_pct
+ FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at AND w.source='fcst'
+ ORDER BY h.name,w.valid_at","Show hourly amount, probability and temperature together. Zero predicted amount does not guarantee zero chance; missing is unknown. Ask about rain/temperature tolerance when interpreting preference fit.",baseline
+Q08,How do conditions near sunrise compare with those near sunset at each location?,compare,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,h.sunrise_at,h.sunset_at,
+ w.valid_at AT TIME ZONE h.timezone AS local_time,
+ CASE WHEN w.valid_at>=h.sunrise_at AND w.valid_at<h.sunrise_at+interval '1 hour'
+ THEN 'morning' ELSE 'evening' END AS period,
+ w.temperature_f,w.wind_speed_mph,w.wind_direction_deg,w.precipitation_in
+ FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id AND w.source='fcst'
+ AND ((w.valid_at>=h.sunrise_at AND w.valid_at<h.sunrise_at+interval '1 hour')
+ OR (w.valid_at<=h.sunset_at AND w.valid_at>h.sunset_at-interval '1 hour'))
+ ORDER BY h.name,w.valid_at",Explain selected hourly timestamps relative to event times. They are not exact sunrise/sunset measurements. Do not assume the user is available for both periods.,baseline
+Q09,How will temperature change from the start of my hunt until noon?,trend,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,w.temperature_f
+ FROM hunt h LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at AND w.source='fcst'
+ ORDER BY h.name,w.valid_at",Report the chronological temperature trend in Fahrenheit with available range and missingness. It can inform dressing but cannot assume personal comfort or guarantee safe exposure.,baseline
+Q10,Is either location missing forecast hours or measurements during the planned hunt?,compare,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) , expected AS (
+ SELECT h.*,g.hour FROM hunt h CROSS JOIN LATERAL generate_series(
+ date_trunc('hour',h.sunrise_at)+interval '1 hour',h.noon_at-interval '1 hour',interval '1 hour') g(hour)
+)
+ SELECT e.name,count(*) AS expected_hours,count(w.weather_id) AS available_hours,
+ count(*)-count(w.weather_id) AS missing_hours,
+ count(*) FILTER(WHERE w.weather_id IS NOT NULL AND
+ (w.temperature_f IS NULL OR w.wind_speed_mph IS NULL OR w.wind_direction_deg IS NULL
+ OR w.precipitation_in IS NULL OR w.precipitation_probability_pct IS NULL)) AS incomplete_hours
+ FROM expected e LEFT JOIN public.hourly_weather w ON w.location_id=e.location_id
+ AND w.valid_at=e.hour AND w.source='fcst' GROUP BY e.name ORDER BY e.name","Report denominators, missing hours and incomplete measurements for matched windows. Missing sunrise/day data makes the window unavailable, not complete. Equal coverage does not demonstrate equal accuracy or representative site conditions.",baseline
+Q11,How do wind speed and direction change through the morning at each location?,trend,"WITH places AS (
+ SELECT location_id,name,timezone FROM public.locations
+ WHERE name IN ('Marquette, KS, United States','Elk City, KS, United States')
+), hunt AS (
+ SELECT p.*, %(hunt_date)s::date AS hunt_date, d.sunrise_at,d.sunset_at,
+ d.moonrise_at,d.moonset_at,d.moon_phase,
+ (%(hunt_date)s::date + time '12:00') AT TIME ZONE p.timezone AS noon_at
+ FROM places p LEFT JOIN public.daily_conditions d
+ ON d.location_id=p.location_id AND d.local_date=%(hunt_date)s::date
+) SELECT h.name,w.valid_at AT TIME ZONE h.timezone AS local_time,
+ w.wind_speed_mph,w.wind_direction_deg FROM hunt h
+ LEFT JOIN public.hourly_weather w ON w.location_id=h.location_id AND w.source='fcst'
+ AND w.valid_at>=h.sunrise_at AND w.valid_at<h.noon_at ORDER BY h.name,w.valid_at",Describe chronological speed and compass-direction changes. Direction is wind FROM; do not average compass degrees arithmetically across north or infer a weather front from two towns alone.,baseline
+Q12,Which location guarantees I will encounter a buck?,should_decline,,Reject the guarantee: weather/astronomy data cannot establish deer encounters. Offer a qualified weather and preference comparison instead.,baseline
+Q13,What wind gusts are expected at my exact stand?,should_decline,,Explain gusts and exact-stand forecasts are not stored. Offer town-level wind speed/direction without inventing terrain effects or private coordinates.,baseline
+Q14,What are my chances of hunting success at each location?,should_decline,,Do not invent success percentages: no outcome dataset or validated success model exists. Explain limits and offer preference-fit comparisons.,baseline
+Q15,What weather is expected on a hunt date beyond the available forecast?,should_decline,,State actual database coverage and decline an unsupported forecast. Ask for another date or later refresh; do not use historical observations as a future forecast.,baseline
